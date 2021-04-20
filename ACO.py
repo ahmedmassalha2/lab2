@@ -3,7 +3,7 @@ from functools import reduce
 import numpy as np
 from numpy.random import choice
 
-alfa = 2
+alpha = 2
 beta = 5
 sigm = 3
 ro = 0.8
@@ -18,19 +18,25 @@ class ACO:
         self.optimalValue = optimalValue
         self.ncars = ncars
         self.maxIter = maxIter
-        self.feromones = self.createFeromonList()
-        self.edges = { (min(a,b),max(a,b)) : np.sqrt((graph[a][0]-graph[b][0])**2 + (graph[a][1]-graph[b][1])**2) for a in graph.keys() for b in graph.keys()}
-    def createFeromonList(self):
-        feromonesList = dict()
+        self.feromones, self.distances = self.createFeromonListAndDistanceList()
+    def createFeromonListAndDistanceList(self):
+        feromonesList, distances = dict(), dict()
         for vertics1 in self.graph.keys():
             for vertics2 in self.graph.keys():
-                if vertics1 != vertics2:
-                    first = min(vertics1,vertics2)
-                    second = max(vertics1,vertics2)
+                first = min(vertics1,vertics2)
+                second = max(vertics1,vertics2)
+                if vertics1 != vertics2:                    
                     feromonesList[(first, second)] = 1
-        return feromonesList
+                distances[(first, second)] = getDistance(self.graph[first],self.graph[second])
+        return feromonesList, distances
+    
     def getProbs(self,city, cities ):
-        probs = list(map(lambda x: ((self.feromones[(min(x,city), max(x,city))])**alfa)*((1/self.edges[(min(x,city), max(x,city))])**beta), cities))
+        probs = []
+        for c in cities:
+            first, second = min(c,city), max(c,city)
+            p = ((self.feromones[(first, second)])**alpha)*((1/self.distances[(first, second)])**beta)
+            probs.append(p)
+
         return probs/np.sum(probs)
     
     
@@ -85,8 +91,10 @@ class ACO:
                 for i in range(len(path)-1):
                     self.feromones[(min(path[i],path[i+1]), max(path[i],path[i+1]))] = (sigm-(l+1)/L**(l+1)) + self.feromones[(min(path[i],path[i+1]), max(path[i],path[i+1]))]
         return bestSolution
-    def runAnts(self):
-        
+    
+    def runAnts(self):     
+        import time
+        startTime = time.time()
         bestState = None
         for iteration in range(self.maxIter):
             antsSolutions = [ self.getNewState() for i in range(30)]
@@ -96,8 +104,8 @@ class ACO:
                     bestState = newBest
             else:
                 bestState = newBest
-            print(bestState[1])
+            print(bestState[1],time.time() - startTime)
 
-initPoint,capacity, graph, demand, optimalValue, ncars, problemName = getData("E-n22-k4.txt")
+initPoint,capacity, graph, demand, optimalValue, ncars, problemName = getData("E-n76-k10.txt")
 a = ACO(graph, demand, capacity, initPoint,optimalValue, ncars, 100000)
 a.runAnts()
