@@ -97,15 +97,15 @@ class ACO:
         startTime = time.time()
         bestState = None
         for iteration in range(self.maxIter):
-            antsSolutions = [ self.getNewState() for i in range(30)]
+            antsSolutions = [ self.getNewState() for i in range(22)]
             newBest = self.updateFeromone(self.feromones, antsSolutions, bestState)
             if bestState!= None:
                 if newBest[1]<bestState[1]:
                     bestState = newBest
             else:
                 bestState = newBest
-            print(bestState[1],time.time() - startTime)
+            print(bestState[1],time.time() - startTime,iteration)
 
-initPoint,capacity, graph, demand, optimalValue, ncars, problemName = getData("E-n76-k10.txt")
+initPoint,capacity, graph, demand, optimalValue, ncars, problemName = getData("E-n101-k8.txt")
 a = ACO(graph, demand, capacity, initPoint,optimalValue, ncars, 100000)
 a.runAnts()
