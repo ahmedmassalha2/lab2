@@ -1,6 +1,7 @@
 
 from simulatedAnnealing import simulatedAnnealing
 from tabuSearch import tabuSearch
+from ACO import ACO
 from functions import *
 from genetic import *
 import time
@@ -23,6 +24,10 @@ def solve(algorithm, path):
                          ,2000000,100, 300,30)
         bestState, bestCost, initPoint, iteration =  alg.run()
     elif algorithm == 2:
+        alg = ACO(graph, demand, capacity, initPoint,optimalValue, ncars, 100000, 30)
+        best, runtime, iteration = alg.runAnts()
+        bestState, bestCost = best[0], best[1]
+    elif algorithm == 3:
         bestState, bestCost, iteration = startGenetic(path)
         
     print("Total elapsed time: ",str(time.time() - startTime))
@@ -30,7 +35,7 @@ def solve(algorithm, path):
     
 
 pathForInput = input("Please enter path for the input file: ")
-getAlgorithm = "To solve your problem, Please select one of the following algorithms:\n" +"Simulated Annealing = 1, Tabu Search = 2, Genetic = 3\n"
+getAlgorithm = "To solve your problem, Please select one of the following algorithms:\n" +"Simulated Annealing = 1, Tabu Search = 2, ACO = 3, Genetic = 4\n"
 print("=======================================================================")
 print("Welcome to CRVP solver")
 algorithm = int(input(getAlgorithm)) - 1

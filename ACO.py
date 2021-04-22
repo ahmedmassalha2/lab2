@@ -1,16 +1,17 @@
 from functions import *
 from functools import reduce
 import numpy as np
+import time
 from numpy.random import choice
 
 alpha = 2
 beta = 5
-sigm = 3
+sigma = 3
 ro = 0.8
-th = 80
+theta = 80
 class ACO:
     def __init__(self,graph, demand, capacity, initPoint,
-                  optimalValue, ncars, maxIter):
+                  optimalValue, ncars, maxIter, maxTries):
         self.graph = graph
         self.demand = demand
         self.capacity = capacity
@@ -18,13 +19,17 @@ class ACO:
         self.optimalValue = optimalValue
         self.ncars = ncars
         self.maxIter = maxIter
+        self.limitTime = 0.6 * ncars
+        self.maxTries = maxTries
         self.feromones, self.distances = self.createFeromonListAndDistanceList()
+    def getEdge(self,v1,v2):
+        return min(v1,v2), max(v1,v2)
+    
     def createFeromonListAndDistanceList(self):
         feromonesList, distances = dict(), dict()
         for vertics1 in self.graph.keys():
             for vertics2 in self.graph.keys():
-                first = min(vertics1,vertics2)
-                second = max(vertics1,vertics2)
+                first, second = self.getEdge(vertics1,vertics2)
                 if vertics1 != vertics2:                    
                     feromonesList[(first, second)] = 1
                 distances[(first, second)] = getDistance(self.graph[first],self.graph[second])
@@ -43,7 +48,7 @@ class ACO:
     
     #create route and calculate its cost
     def getNewState(self):
-        routes, cities = [], [i for i in graph.keys()]
+        routes, cities = [], [i for i in self.graph.keys()]
         
         
         while len(cities) != 0:
@@ -59,7 +64,7 @@ class ACO:
             while len(cities) != 0 and finish == False:
                 probs = self.getProbs(city, cities)
                 city = choice(cities, 1, p=probs)[0]
-                if currCapacity - demand[city] >= 0:
+                if currCapacity - self.demand[city] >= 0:
                     currentTruckPath.append(city)
                     cities.remove(city)
                     currCapacity -= self.demand[city]
@@ -72,40 +77,59 @@ class ACO:
         return (routes, routesCost)
     
     
-    def updateFeromone(self, feromones, solutions, bestSolution):
-        Lavg = reduce(lambda x,y: x+y, (i[1] for i in solutions))/len(solutions)
-        self.feromones = { k : (ro + th/Lavg)*v for (k,v) in self.feromones.items() }
-        solutions.sort(key = lambda x: x[1])
-        if(bestSolution!=None):
-            if(solutions[0][1] < bestSolution[1]):
-                bestSolution = solutions[0]
-            for path in bestSolution[0]:
-                for i in range(len(path)-1):
-                    self.feromones[(min(path[i],path[i+1]), max(path[i],path[i+1]))] = sigm/bestSolution[1] + self.feromones[(min(path[i],path[i+1]), max(path[i],path[i+1]))]
+    def getBestAndUpdateferm(self, feromones, antsSol, bestState):
+        avg = 0
+        for el in antsSol:
+            avg+=el[1]
+        avg = avg/len(antsSol)
+        
+        #update feromones init
+        for key in self.feromones.keys():
+            self.feromones[key] = (ro + theta/avg)*self.feromones[key]
+
+        antsSol.sort(key = lambda sol: sol[1])
+        if(bestState==None):
+            bestState = antsSol[0]
         else:
-            bestSolution = solutions[0]
-        for l in range(sigm):
-            paths = solutions[l][0]
-            L = solutions[l][1]
-            for path in paths:
+            if(antsSol[0][1] < bestState[1]):
+                bestState = antsSol[0]
+            for path in bestState[0]:
                 for i in range(len(path)-1):
-                    self.feromones[(min(path[i],path[i+1]), max(path[i],path[i+1]))] = (sigm-(l+1)/L**(l+1)) + self.feromones[(min(path[i],path[i+1]), max(path[i],path[i+1]))]
-        return bestSolution
+                    v1, v2 = self.getEdge(path[i],path[i+1])
+                    self.feromones[(v1,v2)] = sigma/bestState[1] + self.feromones[(v1,v2)]
+            
+        for idx in range(sigma):
+            routes, routesCost = antsSol[idx][0], antsSol[idx][1]
+            for truck in routes:
+                for i in range(len(truck)-1):
+                    v1, v2 = self.getEdge(truck[i],truck[i+1])
+                    self.feromones[(v1,v2)] = (sigma-(idx+1)/routesCost**(idx+1)) + self.feromones[(v1,v2)]
+        return bestState
     
+    def checkIterStopCond(self,startTime,iteration):
+        if iteration > self.maxIter or (time.time() - startTime) > self.limitTime:
+            return False
+        else:
+            return True
     def runAnts(self):     
-        import time
+        
         startTime = time.time()
-        bestState = None
-        for iteration in range(self.maxIter):
+        bestState, iteration = None, 0
+        tryMax = self.maxTries
+        while self.checkIterStopCond(startTime,iteration):
             antsSolutions = [ self.getNewState() for i in range(22)]
-            newBest = self.updateFeromone(self.feromones, antsSolutions, bestState)
+            newBest = self.getBestAndUpdateferm(self.feromones, antsSolutions, bestState)
             if bestState!= None:
                 if newBest[1]<bestState[1]:
+                    tryMax = self.maxTries
                     bestState = newBest
+                else:
+                    tryMax -= 1
+                    if tryMax == 0:
+                        break
             else:
                 bestState = newBest
             print(bestState[1],time.time() - startTime,iteration)
+            iteration += 1
+        return bestState,time.time() - startTime,iteration
 
-initPoint,capacity, graph, demand, optimalValue, ncars, problemName = getData("E-n101-k8.txt")
-a = ACO(graph, demand, capacity, initPoint,optimalValue, ncars, 100000)
-a.runAnts()
