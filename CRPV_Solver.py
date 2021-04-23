@@ -24,7 +24,7 @@ def solve(algorithm, path):
                          ,2000000,100, 300,30)
         bestState, bestCost, initPoint, iteration =  alg.run()
     elif algorithm == 2:
-        alg = ACO(graph, demand, capacity, initPoint,optimalValue, ncars, 100000, 30)
+        alg = ACO(graph, demand, capacity, initPoint,optimalValue, ncars, 100000, 70,23)
         best, runtime, iteration = alg.runAnts()
         bestState, bestCost = best[0], best[1]
     elif algorithm == 3:
@@ -40,3 +40,4 @@ print("=======================================================================")
 print("Welcome to CRVP solver")
 algorithm = int(input(getAlgorithm)) - 1
 solve(algorithm,pathForInput)
+input("Click enter to exit")

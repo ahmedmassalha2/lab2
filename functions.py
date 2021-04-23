@@ -118,7 +118,7 @@ def calculateSolDistance(initPoint, state, graph, capacity, demand, nTrucks):
      tours = creatTrucksTour(state, graph, capacity, demand, nTrucks)
      return calculateDistance(graph, tours,initPoint)
  
-def prinSolution(path, cost,graph, initPoint, startPoint = 0):
+def prinSolution(path, cost,graph, initPoint,startPoint = 0):
     print("=======================================================================")
     print("Solution cost: ",str(cost))
     for p in path:

@@ -11,7 +11,7 @@ ro = 0.8
 theta = 80
 class ACO:
     def __init__(self,graph, demand, capacity, initPoint,
-                  optimalValue, ncars, maxIter, maxTries):
+                  optimalValue, ncars, maxIter, maxTries, antsNumber):
         self.graph = graph
         self.demand = demand
         self.capacity = capacity
@@ -21,6 +21,7 @@ class ACO:
         self.maxIter = maxIter
         self.limitTime = 0.6 * ncars
         self.maxTries = maxTries
+        self.antsNumber = antsNumber
         self.feromones, self.distances = self.createFeromonListAndDistanceList()
     def getEdge(self,v1,v2):
         return min(v1,v2), max(v1,v2)
@@ -38,7 +39,7 @@ class ACO:
     def getProbs(self,city, cities ):
         probs = []
         for c in cities:
-            first, second = min(c,city), max(c,city)
+            first, second = self.getEdge(c,city)
             p = ((self.feromones[(first, second)])**alpha)*((1/self.distances[(first, second)])**beta)
             probs.append(p)
 
@@ -112,12 +113,12 @@ class ACO:
         else:
             return True
     def runAnts(self):     
-        
+        startTimeClock = time.clock()
         startTime = time.time()
         bestState, iteration = None, 0
         tryMax = self.maxTries
         while self.checkIterStopCond(startTime,iteration):
-            antsSolutions = [ self.getNewState() for i in range(22)]
+            antsSolutions = [ self.getNewState() for i in range(self.antsNumber)]
             newBest = self.getBestAndUpdateferm(self.feromones, antsSolutions, bestState)
             if bestState!= None:
                 if newBest[1]<bestState[1]:
@@ -129,7 +130,9 @@ class ACO:
                         break
             else:
                 bestState = newBest
-            print(bestState[1],time.time() - startTime,iteration)
+            # print(bestState[1],time.time() - startTime,iteration)
+            print("Current best state cost: ",str(bestState[1]), "Clock ticks: ",str(time.clock() - startTimeClock),"Iteration: ",iteration)
+            startTimeClock = time.clock()
             iteration += 1
         return bestState,time.time() - startTime,iteration
 
